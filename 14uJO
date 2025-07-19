@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CT Premier Water Polo Schedule</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font for a clean look */
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-center text-blue-800 mb-6">CT Premier Water Polo Schedule</h1>
+
+        <!-- Container for previously played games -->
+        <div id="previous-games-list" class="mb-4 hidden">
+            <h2 class="text-xl font-semibold text-gray-600 mb-2">Previously Played:</h2>
+            <ul class="space-y-2" id="previous-games-container">
+                <!-- Previous games will be loaded here -->
+            </ul>
+        </div>
+
+        <!-- Container for listing current/upcoming games -->
+        <div id="game-list" class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4" id="games-list-title">Your Next Game:</h2>
+            <ul class="space-y-3" id="games-container">
+                <!-- Games will be loaded here by JavaScript -->
+                <li class="text-gray-500">Loading games...</li>
+            </ul>
+        </div>
+
+        <!-- Section for asking about group placement -->
+        <div class="border-t border-gray-200 pt-6">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4" id="placement-question-title">Group C Placement:</h2>
+            <p class="text-gray-600 mb-4" id="placement-question-text">Did CT Premier finish 1st, 2nd, or 3rd in Group C?</p>
+            <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <select id="placement-select" class="flex-grow p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Select placement</option>
+                    <option value="1st">1st Place</option>
+                    <option value="2nd">2nd Place</option>
+                    <option value="3rd">3rd Place</option>
+                </select>
+                <button id="submit-placement" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+                    Submit Placement
+                </button>
+            </div>
+            <div id="placement-result" class="mt-4 text-lg font-medium text-gray-800">
+                <!-- Placement result will be displayed here -->
+            </div>
+        </div>
+
+        <!-- Navigation buttons -->
+        <div class="flex justify-start mt-6">
+            <button id="back-button" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                Back
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Raw CSV data as a string
+            const csvData = `24-Jul,7:00 AM,Group A,VILLA PARK HS,1,A1(1)-COMMERCE SBU,,A3(25)-MID VALLEY,,,,14GX-001
+24-Jul,7:00 AM,Group H,PORTOLA HS 2,2,H1(8)-SAN JOSE EXPRESS,,H3(32)-SET,,,,14GX-002
+24-Jul,8:00 AM,Group I,ALISO NIGUEL HS,3,I1(9)-TPCM SHARKS,,I3(33)-CLOVIS B,,,,14GX-003
+24-Jul,7:50 AM,Group B,VILLA PARK HS,4,B1(2)-SB 805 B,,B3(26)-LB VIKING,,,,14GX-004
+24-Jul,7:50 AM,Group G,PORTOLA HS 2,5,G1(7)-NEWPORT BEACH WHITE B,,G3(31)-ROSE BOWL BLACK B,,,,14GX-005,moved earlier
+24-Jul,8:50 AM,Group J,ALISO NIGUEL HS,6,J1(10)-PALOS VERDES BLACK,,J3(34)-CAN CLEMENTE BLACK B,,,,14GX-006
+24-Jul,8:40 AM,Group C,VILLA PARK HS,7,C1(3)-908 BLUE B,,C3(27)-CT PREMIER,,,,14GX-007
+24-Jul,8:40 AM,Group F,PORTOLA HS 2,8,F1(6)-ASPHALT GREEN,,F3(30)-SOVA,,,,14GX-008
+24-Jul,10:00 AM,Group D,EDISON HS,10,D1(4)-SHAQ,,D3(28)-NGEN BLACK B,,,,14GX-010,,,bz_W/L
+24-Jul,10:50 AM,Group E,EDISON HS,11,E1(5)-BACK BAY,,E3(29)-CAL REPUBLIC,,,,14GX-011,,,ag_Group
+24-Jul,9:40 AM,Group L,ALISO NIGUEL HS,12,L1(12)-LA JOLLA UNITED B,,L3(35)-BIG VALLEY,,,,14GX-012
+24-Jul,9:30 AM,Group A,VILLA PARK HS,13,A2(24)-ELITE,,A3(25)-MID VALLEY,,,,14GX-013
+24-Jul,10:20 AM,Group H,PORTOLA HS 2,14,H2(17)-SOUTH COAST WHITE B,,H3(32)-SET,,,,14GX-014
+24-Jul,10:30 AM,Group I,ALISO NIGUEL HS,15,I2(16)-AMERICAN RIVER,,I3(33)-CLOVIS B,,,,14GX-015
+24-Jul,10:20 AM,Group B,VILLA PARK HS,16,B2(23)-CHANNEL ISLANDS GOLD,,B3(26)-LB VIKING,,,,14GX-016
+24-Jul,11:10 AM,Group G,PORTOLA HS 2,17,G2(18)-STANFORD C,,G3(31)-ROSE BOWL BLACK B,,,,14GX-017
+24-Jul,11:20 AM,Group J,ALISO NIGUEL HS,18,J2(15)-680 BLUE B,,J3(34)-CAN CLEMENTE BLACK B,,,,14GX-018,no game 48
+24-Jul,11:10 AM,Group C,VILLA PARK HS,19,C2(22)-CC UNITED B,,C3(27)-CT PREMIER,,,,14GX-019
+24-Jul,12:00 PM,Group F,PORTOLA HS 2,20,F2(19)-NORTH IRVINE BLACK A,,F3(30)-SOVA,,,,14GX-020
+24-Jul,11:40 AM,Group K,EDISON HS,21,K1(11)-CHAWP,,K2(14)-LAMORINDA C,,ag_O3,45,14GX-021,,,ag_Group
+24-Jul,12:30 PM,Group D,EDISON HS,22,D2(21)-PRAETORIAN,,D3(28)-NGEN BLACK B,,,,14GX-022,,,bz_W/L
+24-Jul,1:20 PM,Group E,EDISON HS,23,E2(20)-ODIN,,E3(29)-CAL REPUBLIC,,,,14GX-023,,,ag_Group
+24-Jul,12:10 PM,Group L,ALISO NIGUEL HS,24,L2(13)-SEASIDE,,L3(35)-BIG VALLEY,,,,14GX-012
+24-Jul,6:00 PM,2-3 cross,EDISON HS,37,2nd A-,,3rd B-,,ag_U3,bz_N1,14GX-037,,,bz_Group
+24-Jul,5:50 PM,2-3 cross,PORTOLA HS 2,38,2nd H-,,3rd G-,,ag_U2,bz_N2,14GX-038
+24-Jul,6:20 PM,2-3 cross,ALISO NIGUEL HS,39,2nd I-,,3rd J-,,ag_U1,bz_N3,14GX-039,,,bz_Group
+24-Jul,6:50 PM,2-3 cross,EDISON HS,40,2nd B-,,3rd A-,,ag_T3,bz_M1,14GX-040,,,ag_Group
+24-Jul,6:40 PM,2-3 cross,PORTOLA HS 2,41,2nd G-,,3rd H-,,ag_T2,bz_M2,14GX-041
+24-Jul,7:10 PM,2-3 cross,ALISO NIGUEL HS,42,2nd J-,,3rd I-,,ag_T1,bz_M3,14GX-042,,,ag_Group
+24-Jul,7:10 AM,2-3 cross,VILLA PARK HS,43,2nd C-,,3rd D-,,ag_S3,bz_O1,14GX-043
+24-Jul,7:30 PM,2-3 cross,PORTOLA HS 2,44,2nd F-,,3rd E-,,ag_S2,bz_O2,14GX-044
+24-Jul,8:00 PM,2-3 cross,ALISO NIGUEL HS,45,2nd K-,,3rd L-,,ag_S1,bz_O3,14GX-045,,,ag_Group
+24-Jul,6:20 PM,2-3 cross,VILLA PARK HS,46,2nd D-,,3rd C-,,ag_R3,bz_N4,14GX-046
+24-Jul,7:40 PM,2-3 cross,EDISON HS,47,2nd E-,,3rd F-,,ag_R2,bz_O4,14GX-047,,,ag_Group
+25-Jul,7:00 AM,Group,GARDEN GROVE HS,49,ag_O2-,,ag_O3-,,,,14GX-049,,,ag_5-8 v 9-12
+25-Jul,7:00 AM,Group,VILLA PARK HS,50,ag_P2-,,ag_P3-,,,,14GX-050,,,ag_21-24 RR
+25-Jul,7:50 AM,Group,GARDEN GROVE HS,51,ag_U1,,ag_U2,,,,14GX-051,,,ag_21-24 RR
+25-Jul,7:50 AM,Group,VILLA PARK HS,52,ag_T1,,ag_T2,,,,14GX-052,,,bz_5-6 v 7-8
+25-Jul,7:00 AM,Group,PORTOLA HS 2,53,bz_M2,,bz_M3,,RR,RR,14GX-053,,,bz_9-11 RR
+25-Jul,8:40 AM,Group,GARDEN GROVE HS,54,ag_M2-,,ag_M3-,,,,14GX-054,,,bz_RR9-11
+25-Jul,8:40 AM,Group,VILLA PARK HS,55,ag_N2-,,ag_N3-,,,,14GX-055,,,ag_5-6 v 7-8
+25-Jul,7:50 AM,W/L,PORTOLA HS 2,56,bz_N1,,bz_N4,,71,74,14GX-056,,,ag_11th
+25-Jul,9:30 AM,Group,GARDEN GROVE HS,57,ag_S1,,ag_S2,,,,14GX-057,,,ag_5-8 v 9-12
+25-Jul,9:30 AM,Group,VILLA PARK HS,58,ag_R1-,,ag_R2,,,,14GX-058,,,ag_21-24 RR
+25-Jul,8:40 AM,W/L,PORTOLA HS 2,59,bz_N2,,bz_N3,,71,74,14GX-059,,,ag_9th
+25-Jul,10:20 AM,Group,GARDEN GROVE HS,60,ag_O1-,,ag_O3-,,,,14GX-060,,,ag_21-24 RR
+25-Jul,10:20 AM,Group,VILLA PARK HS,61,ag_P1-,,ag_P3-,,,,14GX-061,,,bz_9-11 RR
+25-Jul,9:30 AM,W/L,PORTOLA HS 2,62,bz_O2,,bz_O3,,77,80,14GX-062,,,bz_5th
+25-Jul,11:10 AM,Group,GARDEN GROVE HS,63,ag_U1,,ag_U3,,,,14GX-063,,,bz_RR9-11
+25-Jul,11:10 AM,Group,VILLA PARK HS,64,ag_T1,,ag_T3,,,,14GX-064,,,ag_9-12 semi
+25-Jul,10:20 AM,W/L,PORTOLA HS 2,65,bz_O1,,bz_O4,,77,80,14GX-065,,,ag_7th
+25-Jul,12:00 PM,Group,GARDEN GROVE HS,66,ag_M1-,,ag_M3-,,,,14GX-066,,,ag_5-8 v 9-12
+25-Jul,12:00 PM,Group,VILLA PARK HS,67,ag_N1-,,ag_N3-,,,,14GX-067,,,ag_13-16 semi
+25-Jul,11:10 AM,Group,PORTOLA HS 2,68,bz_M1,,bz_M3,,RR,RR,14GX-068,,,ag_5th
+25-Jul,12:50 PM,Group,GARDEN GROVE HS,69,ag_S1,,ag_S3,,,,14GX-069,,,ag_13-20 qtr
+25-Jul,12:50 PM,Group,VILLA PARK HS,70,ag_R1-,,ag_R3,,,,14GX-070,,,bz_qtr final
+25-Jul,12:00 PM,W/L,PORTOLA HS 2,71,W56,,W59,,100,84,14GX-071,,,bz_9-11 RR
+25-Jul,1:40 PM,Group,GARDEN GROVE HS,72,ag_O1-,,ag_O2-,,,,14GX-072,,,bz_RR9-11
+25-Jul,1:40 PM,Group,VILLA PARK HS,73,ag_P1-,,ag_P2-,,,,14GX-073,,,ag_9-12 semi
+25-Jul,12:50 PM,W/L,PORTOLA HS 2,74,L56,,L59,,94,91,14GX-074,,,ag_3rd
+25-Jul,2:30 PM,Group,GARDEN GROVE HS,75,ag_U2,,ag_U3,,,,14GX-075,,,ag_5-8 v 9-12
+25-Jul,2:30 PM,Group,VILLA PARK HS,76,ag_T2,,ag_T3,,,,14GX-076,,,ag_17-20 semi
+25-Jul,1:40 PM,W/L,PORTOLA HS 2,77,W62,,W65,,100,84,14GX-077,,,ag_1st
+25-Jul,3:20 PM,Group,GARDEN GROVE HS,78,ag_M1-,,ag_M2-,,,,14GX-078,,,ag_13-20 qtr
+25-Jul,3:20 PM,Group,VILLA PARK HS,79,ag_N1-,,ag_N2-,,,,14GX-079,,,bz_qtr final
+25-Jul,2:30 PM,W/L,PORTOLA HS 2,80,L62,,L65,,94,97,14GX-080,,,bz_7th
+25-Jul,4:10 PM,Group,GARDEN GROVE HS,81,ag_S2,,ag_S3,,,,14GX-081,,,bz_1-2 v 3-4
+25-Jul,4:10 PM,Group,VILLA PARK HS,82,ag_R2,,ag_R3,,,,14GX-082,,,ag_Play-in
+25-Jul,3:20 PM,Group,PORTOLA HS 2,83,bz_M1,,bz_M2,,RR,RR,14GX-083
+25-Jul,4:10 PM,W/L,PORTOLA HS 2,84,L71,,L77,,106,103,14GX-084
+25-Jul,6:40 PM,Play-in,GARDEN GROVE HS,85,3rd ag_O-,,1st ag_U-,,89,105,14GX-085,,,bz_5-6 v 7-8
+25-Jul,6:40 PM,Play-in,VILLA PARK HS,86,3rd ag_P-,,1st ag_T-,,95,99,14GX-086,,,ag_17-20 semi
+25-Jul,7:30 PM,Play-in,GARDEN GROVE HS,87,3rd ag_M-,,1st ag_S-,,98,102,14GX-087,,,ag_1-2 v 3-4
+25-Jul,7:30 PM,Play-in,VILLA PARK HS,88,3rd ag_N-,,1st ag_R-,,92,96,14GX-088,,14GX-065semi,bz_semi
+26-Jul,12:00 PM,5-8 v 9-12,FULLERTON HS,89,2nd ag_P-,,W85,,107,113,14GX-089
+26-Jul,10:00 AM,21-24 RR,FULLERTON HS,90,3rd ag_T-,,3rd ag_S-,,,,14GX-090
+26-Jul,8:00 AM,RR9-11,GARDEN GROVE HS,91,2nd bz_M-,,L74,,103,112,14GX-091
+26-Jul,1:00 PM,5-8 v 9-12,FULLERTON HS,92,2nd ag_M-,,W88,,107,113,14GX-092
+26-Jul,11:00 AM,21-24 RR,FULLERTON HS,93,3rd ag_U-,,3rd ag_R-,,,,14GX-093
+26-Jul,9:00 AM,RR9-11,GARDEN GROVE HS,94,W74,,W80,,109,112,14GX-094
+26-Jul,9:00 AM,5-8 v 9-12,FULLERTON HS,95,2nd ag_O-,,W86,,110,116,14GX-095
+26-Jul,10:00 AM,13-20 qtr,VILLA PARK HS,96,L88,,2nd ag_U-,,114,117,14GX-096
+26-Jul,10:00 AM,RR9-11,GARDEN GROVE HS,97,L80,,3rd bz_M-,,109,136,14GX-097
+26-Jul,9:00 AM,5-8 v 9-12,VILLA PARK HS,98,2nd ag_N-,,W87,,110,116,14GX-098
+26-Jul,11:00 AM,13-20 qtr,VILLA PARK HS,99,L86,,2nd ag_S-,,114,117,14GX-099
+26-Jul,11:00 AM,1-2 v 3-4,GARDEN GROVE HS,100,W71,,W77,,127,115,14GX-100
+26-Jul,9:00 AM,1-2 v 3-4,BREA OLINDA HS,101,1st ag_N-,,1st ag_O-,,132,119,14GX-101
+26-Jul,12:00 PM,13-20 qtr,VILLA PARK HS,102,L87,,2nd ag_T-,,120,123,14GX-102
+26-Jul,12:00 PM,5-6 v 7-8,GARDEN GROVE HS,103,L84,,W91,,115,140A,14GX-103
+26-Jul,10:00 AM,1-2 v 3-4,BREA OLINDA HS,104,1st ag_M-,,1st ag_P-,,131,122,14GX-104
+26-Jul,1:00 PM,13-20 qtr,VILLA PARK HS,105,L85,,2nd ag_R-,,120,123,14GX-105
+26-Jul,1:00 PM,1-2 v 3-4,GARDEN GROVE HS,106,1st bz_M-,,W84,,124,118,14GX-106
+26-Jul,11:00 AM,5-6 v 7-8,BREA OLINDA HS,107,W89,,W92,,119,140,14GX-107
+26-Jul,2:00 PM,21-24 RR,FULLERTON HS,108,3rd ag_U-,,3rd ag_S-,,,,14GX-108
+26-Jul,2:00 PM,5-6 v 7-8,GARDEN GROVE HS,109,W94,,W97,,118,140,14GX-109
+26-Jul,12:00 PM,5-6 v 7-8,BREA OLINDA HS,110,W95,,W98,,122,140,14GX-110
+26-Jul,3:00 PM,21-24 RR,FULLERTON HS,111,3rd ag_T-,,3rd ag_R-,,,,14GX-111
+26-Jul,3:00 PM,9-11 RR,GARDEN GROVE HS,112,L91,,L94,,RR,RR,14GX-112
+26-Jul,1:00 PM,9-12 semi,BREA OLINDA HS,113,L92,,L89,,138,137,14GX-113
+26-Jul,4:00 PM,13-16 semi,VILLA PARK HS,114,W96,,W99,,135,134,14GX-114
+26-Jul,4:00 PM,qtr final,GARDEN GROVE HS,115,L100,,W103,,124,139,14GX-115
+26-Jul,2:00 PM,9-12 semi,BREA OLINDA HS,116,L98,,L95,,138,137,14GX-116
+26-Jul,5:00 PM,17-20 semi,FULLERTON HS,117,L99,,L96,,129,128,14GX-117
+26-Jul,5:00 PM,qtr final,GARDEN GROVE HS,118,L106,,W109,,127,139,14GX-118
+26-Jul,3:00 PM,Play-in,BREA OLINDA HS,119,L101,,W107,,131,141,14GX-119
+26-Jul,5:00 PM,13-16 semi,VILLA PARK HS,120,W102,,W105,,135,134,14GX-120
+26-Jul,4:00 PM,Play-in,BREA OLINDA HS,122,L104,,W110,,132,141,14GX-122
+26-Jul,6:00 PM,17-20 semi,FULLERTON HS,123,L105,,L102,,129,128,14GX-123
+27-Jul,7:00 AM,semi,VILLA PARK HS,124,W106,,W115,,133,130,14GX-124
+27-Jul,7:00 AM,21-24 RR,GARDEN GROVE HS,125,3rd ag_T-,,3rd ag_U-,,,,14GX-125
+27-Jul,8:00 AM,21-24 RR,GARDEN GROVE HS,126,3rd ag_R-,,3rd ag_S-,,,,14GX-126
+27-Jul,8:00 AM,semi,VILLA PARK HS,127,W100,,W118,,133,130,14GX-127
+27-Jul,1:00 PM,19th,BREA OLINDA HS,128,L117,,L123,,19th,20th,14GX-128
+27-Jul,12:00 PM,17th,BREA OLINDA HS,129,W117,,W123,,17th,18th,14GX-129
+27-Jul,11:00 AM,3rd,VILLA PARK HS,130,L124,,L127,,3rd,4th,14GX-130
+27-Jul,9:00 AM,semi,VILLA PARK HS,131,W104,,W119,,146,145,14GX-131
+27-Jul,10:00 AM,semi,VILLA PARK HS,132,W101,,W122,,146,145,14GX-132
+27-Jul,12:00 PM,1st,VILLA PARK HS,133,W124,,W127,,1st,2nd,14GX-133
+27-Jul,11:00 AM,15th,BREA OLINDA HS,134,L114,,L120,,15th,16th,14GX-134
+27-Jul,10:00 AM,13th,BREA OLINDA HS,135,W114,,W120,,13th,14th,14GX-135
+27-Jul,9:00 AM,9-11 RR,GARDEN GROVE HS,136,L97,,L91,,RR,RR,14GX-136
+27-Jul,9:00 AM,11th,BREA OLINDA HS,137,L113,,L116,,11th,12th,14GX-137
+27-Jul,8:00 AM,9th,BREA OLINDA HS,138,W113,,W116,,9th,10th,14GX-138
+27-Jul,11:00 AM,5th,GARDEN GROVE HS,139,L115,,L118,,5th,6th,14GX-139
+27-Jul,7:00 AM,7th,BREA OLINDA HS,140,L107,,L110,,7th,8th,14GX-140
+27-Jul,12:00 PM,7th,GARDEN GROVE HS,140A,L103,,L109,,7th,8th,14GX-140A
+27-Jul,10:00 AM,5th,GARDEN GROVE HS,141,L119,,L122,,5th,6th,14GX-141
+27-Jul,1:00 PM,9-11 RR,GARDEN GROVE HS,142,L97,,L94,,RR,RR,14GX-142
+27-Jul,1:00 PM,3rd,VILLA PARK HS,145,L131,,L132,,3rd,4th,14GX-145
+27-Jul,2:00 PM,1st,VILLA PARK HS,146,W131,,W132,,1st,2nd,14GX-146`;
+
+            const previousGamesList = document.getElementById('previous-games-list');
+            const previousGamesContainer = document.getElementById('previous-games-container');
+            const gamesContainer = document.getElementById('games-container');
+            const gamesListTitle = document.getElementById('games-list-title');
+            const placementQuestionTitle = document.getElementById('placement-question-title');
+            const placementQuestionText = document.getElementById('placement-question-text');
+            const placementSelect = document.getElementById('placement-select');
+            const submitPlacementButton = document.getElementById('submit-placement');
+            const placementResult = document.getElementById('placement-result');
+            const backButton = document.getElementById('back-button');
+
+            let currentTeamIdentifier = 'CT PREMIER';
+            let currentStep = 'groupC_placement';
+            let gameHistory = []; // Stores objects like { teamIdentifier, title, questionState, playedGamesSnapshot }
+            let playedGames = []; // Stores games that have been "completed" with a win/lose outcome
+            let allGames;
+            let gameMap; // To quickly look up games by their game number
+
+            // Function to parse the CSV data
+            function parseCSV(csvString) {
+                const lines = csvString.trim().split('\n');
+                const games = [];
+                const gameMap = {}; // To store games by Gm # for quick lookup
+
+                // Find the actual data lines, skipping the header if it's the last line.
+                const potentialHeader = lines[lines.length - 1];
+                const actualLines = potentialHeader.startsWith('Date,Time,Type,Location,Gm #') ? lines.slice(0, -1) : lines;
+
+                actualLines.forEach(line => {
+                    const parts = line.split(',');
+
+                    // Ensure enough parts for core data (Date, Time, Type, Location, Gm #, White, S_White, Dark, S_Dark, W to #, L to #, GMID)
+                    if (parts.length >= 12) { // Adjusted to account for more columns
+                        const game = {
+                            date: parts[0] ? parts[0].trim() : '',
+                            time: parts[1] ? parts[1].trim() : '',
+                            type: parts[2] ? parts[2].trim() : '',
+                            location: parts[3] ? parts[3].trim() : '',
+                            gameNum: parts[4] ? parts[4].trim() : '',
+                            whiteTeam: parts[5] ? parts[5].trim() : '',
+                            scoreWhite: parts[6] ? parts[6].trim() : '', // S_White
+                            darkTeam: parts[7] ? parts[7].trim() : '',
+                            scoreDark: parts[8] ? parts[8].trim() : '',  // S_Dark
+                            winTo: parts[9] ? parts[9].trim() : '',
+                            loseTo: parts[10] ? parts[10].trim() : '',
+                            gmid: parts[11] ? parts[11].trim() : ''
+                        };
+                        games.push(game);
+                        gameMap[game.gameNum] = game; // Key by game number
+                    }
+                });
+                return { games, gameMap }; // Return both
+            }
+
+            // Function to update the visibility and content of the placement UI
+            function updatePlacementUI(isVisible, title = '', text = '', resetSelect = false) {
+                if (isVisible) {
+                    placementQuestionTitle.style.display = '';
+                    placementQuestionText.style.display = '';
+                    placementSelect.style.display = '';
+                    submitPlacementButton.style.display = '';
+                    if (title) placementQuestionTitle.textContent = title;
+                    if (text) placementQuestionText.textContent = text;
+                    if (resetSelect) placementSelect.value = '';
+                    placementResult.textContent = ''; // Clear result when showing new question
+                } else {
+                    placementQuestionTitle.style.display = 'none';
+                    placementQuestionText.style.display = 'none';
+                    placementSelect.style.display = 'none';
+                    submitPlacementButton.style.display = 'none';
+                    placementResult.textContent = ''; // Clear result when hiding
+                }
+            }
+
+            // Function to display games for a given team/identifier
+            // Now lists all relevant games for a group stage or round robin, or a single game with win/loss buttons
+            function displayGames(identifier, title, isGroupOrRoundRobin = false) {
+                let gamesToDisplay = [];
+
+                if (isGroupOrRoundRobin) {
+                    // For group stages or round robins, filter by team name/identifier
+                    gamesToDisplay = allGames.filter(game =>
+                        game.whiteTeam.includes(identifier) || game.darkTeam.includes(identifier)
+                    );
+                } else {
+                    // For progression games, 'identifier' is expected to be a game number
+                    const game = gameMap[identifier];
+                    if (game) {
+                        gamesToDisplay.push(game);
+                    }
+                }
+
+                gamesListTitle.textContent = title;
+                gamesContainer.innerHTML = ''; // Clear current games
+
+                // Display previously played games
+                previousGamesContainer.innerHTML = '';
+                if (playedGames.length > 0) {
+                    previousGamesList.classList.remove('hidden');
+                    // Use a Set to ensure unique games if there are duplicates from history restoration
+                    const uniquePlayedGames = Array.from(new Set(playedGames.map(game => game.gameNum)))
+                                                    .map(gameNum => gameMap[gameNum]);
+
+                    uniquePlayedGames.forEach(game => {
+                        const prevItem = document.createElement('li');
+                        prevItem.className = 'bg-gray-100 p-3 rounded-lg text-gray-600 text-sm';
+                        prevItem.innerHTML = `<span class="font-semibold">Played Game #${game.gameNum}:</span> ${game.date} - ${game.whiteTeam} vs ${game.darkTeam}`;
+                        previousGamesContainer.appendChild(prevItem);
+                    });
+                } else {
+                    previousGamesList.classList.add('hidden');
+                }
+
+                if (gamesToDisplay.length > 0) {
+                    if (isGroupOrRoundRobin) {
+                        // For group stages or round robins, list all games without win/lose buttons
+                        gamesToDisplay.forEach(game => {
+                            const listItem = document.createElement('li');
+                            listItem.className = 'bg-blue-50 p-4 rounded-lg shadow-sm text-gray-700';
+                            listItem.innerHTML = `<span class="font-semibold">Game #${game.gameNum}:</span> ${game.date} at ${game.time} in ${game.location} -
+                                                  <span class="font-medium">${game.whiteTeam}</span> vs <span class="font-medium">${game.darkTeam}</span>`;
+                            gamesContainer.appendChild(listItem);
+                        });
+                        if (identifier === '3rd ag_S' || identifier === '3rd ag_R') { // Add specific explanation for 21-24 RR
+                            gamesContainer.innerHTML += `<p class="text-gray-600 mt-4">These games are part of a round-robin for 21st through 24th place. Your final placement will be determined by the results of these games.</p>`;
+                        }
+                        // Check if any of the displayed games are part of the 9-11 RR
+                        const is9to11RR = gamesToDisplay.some(game => game.type.includes('9-11 RR'));
+                        if (is9to11RR) {
+                            gamesContainer.innerHTML += `<p class="text-gray-600 mt-4">These games are part of a round-robin for 9th through 11th place. Your final placement will be determined by the results of these games.</p>`;
+                        }
+
+                        // Add a note for group games that their outcome is based on overall group placement
+                        if (identifier === 'ag_O1' || identifier === 'ag_S3' || identifier === 'ag_R3') {
+                             gamesContainer.innerHTML += `<p class="text-gray-600 mt-4 text-sm">The outcome of these group games determines your overall group placement, which will then lead to your next bracket game.</p>`;
+                        }
+                    } else {
+                        // For single progression games, display with win/lose buttons
+                        const game = gamesToDisplay[0];
+                        const listItem = document.createElement('li');
+                        listItem.className = 'bg-blue-50 p-4 rounded-lg shadow-sm text-gray-700 flex flex-col sm:flex-row justify-between items-center';
+                        let gameInfo = `<span class="font-semibold">Game #${game.gameNum}:</span> ${game.date} at ${game.time} in ${game.location} -
+                                        <span class="font-medium">${game.whiteTeam}</span> vs <span class="font-medium">${game.darkTeam}</span>`;
+
+                        let actionButtons = '';
+                        // Check if winTo/loseTo are valid game numbers OR specific known team identifiers that lead to further play
+                        // Updated to use the teamIdentifiersForNextStage for robust checking
+                        const isWinToNextPlayable = game.winTo && (gameMap[game.winTo] || teamIdentifiersForNextStage[game.winTo]);
+                        const isLoseToNextPlayable = game.loseTo && (gameMap[game.loseTo] || teamIdentifiersForNextStage[game.loseTo]);
+
+                        if (isWinToNextPlayable || isLoseToNextPlayable) {
+                            actionButtons = `
+                                <div class="flex space-x-2 mt-2 sm:mt-0">
+                                    ${isWinToNextPlayable ? `<button data-game-num="${game.gameNum}" data-outcome="win" class="outcome-button bg-green-500 hover:bg-green-600 text-white text-sm py-1 px-3 rounded-md">Win</button>` : ''}
+                                    ${isLoseToNextPlayable ? `<button data-game-num="${game.gameNum}" data-outcome="lose" class="outcome-button bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-3 rounded-md">Lose</button>` : ''}
+                                </div>
+                            `;
+                        } else if (game.winTo && game.loseTo && isNaN(game.winTo) && isNaN(game.loseTo)) {
+                            // This is a final placement game, e.g., "13th", "14th"
+                            actionButtons = `<div class="text-gray-500 mt-2 sm:mt-0 text-sm">Final Placement: Win leads to ${game.winTo}, Lose leads to ${game.loseTo}.</div>`;
+                        } else {
+                            // End of tracked path for other reasons (e.g., missing winTo/loseTo or invalid data)
+                            actionButtons = `<div class="text-gray-500 mt-2 sm:mt-0 text-sm">End of tracked path for this game.</div>`;
+                        }
+                        listItem.innerHTML = `${gameInfo} ${actionButtons}`;
+                        gamesContainer.appendChild(listItem);
+
+                        // Add event listeners for win/lose buttons after they are added to the DOM
+                        document.querySelectorAll('.outcome-button').forEach(button => {
+                            button.addEventListener('click', (event) => {
+                                const gameNum = event.target.dataset.gameNum;
+                                const outcome = event.target.dataset.outcome;
+                                handleGameOutcome(gameNum, outcome);
+                            });
+                        });
+                    }
+                } else {
+                    gamesContainer.innerHTML = `<li class="text-gray-500">No upcoming games found for ${identifier}. This path might be complete or data is unavailable.</li>`;
+                }
+            }
+
+            // Define known team identifiers that can appear as winTo/loseTo and lead to a group/round-robin or specific single game
+            const teamIdentifiersForNextStage = {
+                'ag_S3': { step: 'groupAGS_placement', isGroup: true, title: 'Games for ag_S3 (after winning Game #43):', question: 'Group ag_S Placement:', questionText: 'What place did CT Premier come in in group ag_S?' },
+                'bz_O1': { step: 'post_group_games', nextGame: '65', isGroup: false, title: 'Your Next Game (after losing Game #43):' }, // Plays game 65
+                'ag_R3': { step: 'groupAGR_placement', isGroup: true, title: 'Games for ag_R3 (after winning Game #46):', question: 'Group ag_R Placement:', questionText: 'What place did CT Premier come in in group ag_R?' },
+                'bz_N4': { step: 'post_group_games', nextGame: '56', isGroup: false, title: 'Your Next Game (after losing Game #46):' }, // Plays game 56
+                // Outcomes from group placements
+                '1st ag_O': { step: 'post_group_games', nextGame: '101', isGroup: false, title: 'Your Next Game (after 1st Place in ag_O):' },
+                '2nd ag_O': { step: 'post_group_games', nextGame: '95', isGroup: false, title: 'Your Next Game (after 2nd Place in ag_O):' },
+                '3rd ag_O': { step: 'post_group_games', nextGame: '85', isGroup: false, title: 'Your Next Game (after 3rd Place in ag_O):' },
+                '1st ag_S': { step: 'post_group_games', nextGame: '87', isGroup: false, title: 'Your Next Game (after 1st Place in ag_S):' },
+                '2nd ag_S': { step: 'post_group_games', nextGame: '99', isGroup: false, title: 'Your Next Game (after 2nd Place in ag_S):' },
+                '3rd ag_S': { step: 'final_round_robin', isGroup: true, title: 'Games for 3rd Place in ag_S (21st-24th Round Robin):' }, // RR
+                '1st ag_R': { step: 'post_group_games', nextGame: '88', isGroup: false, title: 'Your Next Game (after 1st Place in ag_R):' },
+                '2nd ag_R': { step: 'post_group_games', nextGame: '105', isGroup: false, title: 'Your Next Game (after 2nd Place in ag_R):' },
+                '3rd ag_R': { step: 'final_round_robin', isGroup: true, title: 'Games for 3rd Place in ag_R (21st-24th Round Robin):' }, // RR
+                // Outcomes from 2-3 cross games leading to specific games or round robins
+                'bz_N1': { step: 'post_group_games', nextGame: '71', isGroup: false, title: 'Your Next Game (bz_N1):' },
+                'bz_N2': { step: 'post_group_games', nextGame: '59', isGroup: false, title: 'Your Next Game (bz_N2):' },
+                'bz_N3': { step: 'post_group_games', nextGame: '53', isGroup: false, title: 'Your Next Game (bz_N3):' }, // Leads to 9-11 RR
+                'bz_O1': { step: 'post_group_games', nextGame: '65', isGroup: false, title: 'Your Next Game (bz_O1):' },
+                'bz_O2': { step: 'post_group_games', nextGame: '62', isGroup: false, title: 'Your Next Game (bz_O2):' },
+                'bz_O3': { step: 'post_group_games', nextGame: '49', isGroup: false, title: 'Your Next Game (bz_O3):' },
+                'bz_O4': { step: 'post_group_games', nextGame: '65', isGroup: false, title: 'Your Next Game (bz_O4):' },
+                'bz_M1': { step: 'final_round_robin', isGroup: true, title: 'Games for bz_M1 (9th-11th Round Robin):' }, // Leads to 9-11 RR
+                'bz_M2': { step: 'final_round_robin', isGroup: true, title: 'Games for bz_M2 (9th-11th Round Robin):' }, // Leads to 9-11 RR
+                'bz_M3': { step: 'final_round_robin', isGroup: true, title: 'Games for bz_M3 (9th-11th Round Robin):' }, // Leads to 9-11 RR
+            };
+
+
+            // Handles the outcome of a game (win/lose)
+            function handleGameOutcome(gameNum, outcome) {
+                // Save current state for back button
+                gameHistory.push({
+                    teamIdentifier: currentTeamIdentifier,
+                    title: gamesListTitle.textContent,
+                    questionTitle: placementQuestionTitle.textContent,
+                    questionText: placementQuestionText.textContent,
+                    selectedPlacement: placementSelect.value,
+                    resultText: placementResult.textContent,
+                    step: currentStep,
+                    placementVisible: placementQuestionTitle.style.display !== 'none',
+                    playedGamesSnapshot: [...playedGames] // Snapshot of played games array
+                });
+
+                const game = gameMap[gameNum];
+                if (game) {
+                    // Add this game to the list of played games, ensuring no duplicates
+                    if (!playedGames.some(pg => pg.gameNum === game.gameNum)) {
+                        playedGames.push(game);
+                    }
+                }
+
+                let nextIdentifier = (outcome === 'win') ? game.winTo : game.loseTo;
+                let nextTitle = `Your Next Game (after ${outcome}ing Game #${gameNum}):`;
+                let nextIsGroupOrRoundRobin = false;
+
+                const nextStageInfo = teamIdentifiersForNextStage[nextIdentifier];
+
+                if (nextStageInfo) {
+                    currentTeamIdentifier = nextIdentifier;
+                    currentStep = nextStageInfo.step;
+                    nextTitle = nextStageInfo.title;
+                    nextIsGroupOrRoundRobin = nextStageInfo.isGroup;
+
+                    if (nextStageInfo.nextGame) { // If it directly leads to a specific game number
+                        currentTeamIdentifier = nextStageInfo.nextGame;
+                        displayGames(currentTeamIdentifier, nextTitle, nextIsGroupOrRoundRobin);
+                    } else { // If it leads to a group/round-robin where placement is asked
+                        displayGames(currentTeamIdentifier, nextTitle, nextIsGroupOrRoundRobin);
+                        if (nextStageInfo.question) {
+                            updatePlacementUI(true, nextStageInfo.question, nextStageInfo.questionText, true);
+                            if (nextStageInfo.step === 'final_round_robin') {
+                                submitPlacementButton.disabled = true;
+                                placementSelect.disabled = true;
+                            }
+                        }
+                    }
+                } else if (!isNaN(nextIdentifier) && gameMap[nextIdentifier]) {
+                    // It's a valid next game number not covered by teamIdentifiersForNextStage
+                    currentTeamIdentifier = nextIdentifier;
+                    currentStep = 'post_group_games';
+                    displayGames(currentTeamIdentifier, nextTitle, false);
+                    updatePlacementUI(false);
+                } else {
+                    // It's a final placement string or an unknown identifier, so the path ends
+                    gamesContainer.innerHTML = `<li class="text-gray-500">Path ends here. Result: After Game #${gameNum}, ${outcome} leads to ${nextIdentifier}.</li>`;
+                    gamesListTitle.textContent = "Path Complete";
+                    updatePlacementUI(false);
+                    submitPlacementButton.disabled = true;
+                    placementSelect.disabled = true;
+                }
+                updateBackButtonState();
+            }
+
+            // Update the state of the back button (enabled/disabled)
+            function updateBackButtonState() {
+                backButton.disabled = gameHistory.length === 0;
+            }
+
+            // --- Initial Application Setup ---
+            const { games, gameMap: parsedGameMap } = parseCSV(csvData);
+            allGames = games;
+            gameMap = parsedGameMap;
+
+            // Initial display of CT Premier's games and placement question
+            displayGames('CT PREMIER', 'CT Premier Group C Games:', true); // Mark as group stage
+            updatePlacementUI(true, 'Group C Placement:', 'Did CT Premier finish 1st, 2nd, or 3rd in Group C?');
+            updateBackButtonState(); // Initialize back button state
+
+
+            // Event listener for the submit button (for group placements)
+            submitPlacementButton.addEventListener('click', () => {
+                const selectedPlacement = placementSelect.value;
+                if (!selectedPlacement) {
+                    placementResult.textContent = 'Please select a placement.';
+                    placementResult.className = 'mt-4 text-lg font-bold text-red-500';
+                    return;
+                }
+
+                // Save current state before proceeding to the next step
+                gameHistory.push({
+                    teamIdentifier: currentTeamIdentifier,
+                    title: gamesListTitle.textContent,
+                    questionTitle: placementQuestionTitle.textContent,
+                    questionText: placementQuestionText.textContent,
+                    selectedPlacement: selectedPlacement, // Save the selected placement
+                    resultText: placementResult.textContent,
+                    step: currentStep,
+                    placementVisible: placementQuestionTitle.style.display !== 'none',
+                    playedGamesSnapshot: [...playedGames]
+                });
+
+                if (currentStep === 'groupC_placement') {
+                    placementResult.textContent = `CT Premier finished in ${selectedPlacement} in Group C.`;
+                    placementResult.className = 'mt-4 text-lg font-bold text-green-700';
+
+                    // Add Group C games to playedGames, ensuring no duplicates
+                    const groupCGames = allGames.filter(game =>
+                        game.type.includes('Group C') && (game.whiteTeam.includes('CT PREMIER') || game.darkTeam.includes('CT PREMIER'))
+                    );
+                    groupCGames.forEach(game => {
+                        if (!playedGames.some(pg => pg.gameNum === game.gameNum)) {
+                            playedGames.push(game);
+                        }
+                    });
+
+
+                    if (selectedPlacement === '1st') {
+                        currentTeamIdentifier = 'ag_O1'; // CT Premier becomes ag_O1
+                        currentStep = 'groupAO_placement';
+                        updatePlacementUI(true, 'Group ag_O Placement:', 'What place did CT Premier come in in group ag_O?', true);
+                        displayGames(currentTeamIdentifier, 'Games for ag_O1:', true); // Mark as group stage
+                    } else if (selectedPlacement === '2nd') {
+                        currentTeamIdentifier = '43'; // Game 43
+                        currentStep = 'game43_outcome';
+                        updatePlacementUI(false); // Hide placement UI for now, as we're asking for game outcome
+                        displayGames(currentTeamIdentifier, 'Your Next Game (after 2nd Place in Group C):', false); // Display Game 43
+                    }
+                    else if (selectedPlacement === '3rd') { // NEW: 3rd place in Group C
+                        currentTeamIdentifier = '46'; // Game 46
+                        currentStep = 'game46_outcome';
+                        updatePlacementUI(false); // Hide placement UI for now, as we're asking for game outcome
+                        displayGames(currentTeamIdentifier, 'Your Next Game (after 3rd Place in Group C):', false); // Display Game 46
+                    }
+                } else if (currentStep === 'groupAO_placement') {
+                    let nextGameNum = '';
+                    let displayTitle = '';
+
+                    // Add ag_O games to playedGames, ensuring no duplicates
+                    const groupAOGames = allGames.filter(game =>
+                        (game.whiteTeam.includes(currentTeamIdentifier) || game.darkTeam.includes(currentTeamIdentifier))
+                    );
+                    groupAOGames.forEach(game => {
+                        if (!playedGames.some(pg => pg.gameNum === game.gameNum)) {
+                            playedGames.push(game);
+                        }
+                    });
+
+                    if (selectedPlacement === '1st') {
+                        nextGameNum = '101'; // Game for 1st ag_O
+                        displayTitle = 'Your Next Game (after 1st Place in ag_O):';
+                    } else if (selectedPlacement === '2nd') {
+                        nextGameNum = '95'; // Game for 2nd ag_O
+                        displayTitle = 'Your Next Game (after 2nd Place in ag_O):';
+                    } else if (selectedPlacement === '3rd') {
+                        nextGameNum = '85'; // Game for 3rd ag_O
+                        displayTitle = 'Your Next Game (after 3rd Place in ag_O):';
+                    }
+
+                    placementResult.textContent = `CT Premier finished in ${selectedPlacement} in group ag_O.`;
+                    placementResult.className = 'mt-4 text-lg font-bold text-green-700';
+
+                    currentTeamIdentifier = nextGameNum; // Now currentTeamIdentifier is the game number
+                    currentStep = 'post_group_games';
+                    displayGames(currentTeamIdentifier, displayTitle, false); // Not a group stage game
+
+                    updatePlacementUI(false);
+                } else if (currentStep === 'groupAGS_placement') { // Logic for group ag_S placement
+                    let nextIdentifier = ''; // Could be game number or a team identifier for round robin
+                    let displayTitle = '';
+                    let nextIsGroupOrRoundRobin = false;
+
+                    // Add ag_S games to playedGames, ensuring no duplicates
+                    const groupAGSGames = allGames.filter(game =>
+                        (game.whiteTeam.includes(currentTeamIdentifier) || game.darkTeam.includes(currentTeamIdentifier))
+                    );
+                    groupAGSGames.forEach(game => {
+                        if (!playedGames.some(pg => pg.gameNum === game.gameNum)) {
+                            playedGames.push(game);
+                        }
+                    });
+
+                    if (selectedPlacement === '1st') {
+                        nextIdentifier = '87'; // Game for 1st ag_S
+                        displayTitle = 'Your Next Game (after 1st Place in ag_S):';
+                        nextIsGroupOrRoundRobin = false;
+                    } else if (selectedPlacement === '2nd') {
+                        nextIdentifier = '99'; // Game for 2nd ag_S
+                        displayTitle = 'Your Next Game (after 2nd Place in ag_S):';
+                        nextIsGroupOrRoundRobin = false;
+                    } else if (selectedPlacement === '3rd') {
+                        nextIdentifier = '3rd ag_S'; // This is the team identifier for the round robin
+                        displayTitle = 'Games for 3rd Place in ag_S (21st-24th Round Robin):';
+                        nextIsGroupOrRoundRobin = true; // This is a round robin, list all games
+                        // The explanation paragraph will be added in displayGames if isGroupOrRoundRobin is true and identifier is '3rd ag_S'
+                        submitPlacementButton.disabled = true; // Disable further input for this path
+                        placementSelect.disabled = true;
+                        updatePlacementUI(true, 'Final Placement Bracket', 'This path leads to a round-robin for final placement.'); // Update placement UI to reflect end
+                    }
+
+                    placementResult.textContent = `CT Premier finished in ${selectedPlacement} in group ag_S.`;
+                    placementResult.className = 'mt-4 text-lg font-bold text-green-700';
+
+                    currentTeamIdentifier = nextIdentifier;
+                    currentStep = 'final_round_robin'; // New step to differentiate from single game progression
+                    displayGames(currentTeamIdentifier, displayTitle, nextIsGroupOrRoundRobin);
+
+                    if (!nextIsGroupOrRoundRobin) { // Only hide if not a round robin that needs the placement UI for explanation
+                        updatePlacementUI(false);
+                    }
+                } else if (currentStep === 'groupAGR_placement') { // NEW: Logic for group ag_R placement
+                    let nextIdentifier = '';
+                    let displayTitle = '';
+                    let nextIsGroupOrRoundRobin = false;
+
+                    // Add ag_R games to playedGames, ensuring no duplicates
+                    const groupAGRGames = allGames.filter(game =>
+                        (game.whiteTeam.includes(currentTeamIdentifier) || game.darkTeam.includes(currentTeamIdentifier))
+                    );
+                    groupAGRGames.forEach(game => {
+                        if (!playedGames.some(pg => pg.gameNum === game.gameNum)) {
+                            playedGames.push(game);
+                        }
+                    });
+
+                    if (selectedPlacement === '1st') {
+                        nextIdentifier = '88'; // Game for 1st ag_R
+                        displayTitle = 'Your Next Game (after 1st Place in ag_R):';
+                        nextIsGroupOrRoundRobin = false;
+                    } else if (selectedPlacement === '2nd') {
+                        nextIdentifier = '105'; // Game for 2nd ag_R
+                        displayTitle = 'Your Next Game (after 2nd Place in ag_R):';
+                        nextIsGroupOrRoundRobin = false;
+                    } else if (selectedPlacement === '3rd') {
+                        nextIdentifier = '3rd ag_R'; // This is the team identifier for the round robin
+                        displayTitle = 'Games for 3rd Place in ag_R (21st-24th Round Robin):';
+                        nextIsGroupOrRoundRobin = true; // This is a round robin, list all games
+                        submitPlacementButton.disabled = true; // Disable further input for this path
+                        placementSelect.disabled = true;
+                        updatePlacementUI(true, 'Final Placement Bracket', 'This path leads to a round-robin for final placement.'); // Update placement UI to reflect end
+                    }
+
+                    placementResult.textContent = `CT Premier finished in ${selectedPlacement} in group ag_R.`;
+                    placementResult.className = 'mt-4 text-lg font-bold text-green-700';
+
+                    currentTeamIdentifier = nextIdentifier;
+                    currentStep = 'final_round_robin'; // Use the same step for any final round robin
+                    displayGames(currentTeamIdentifier, displayTitle, nextIsGroupOrRoundRobin);
+
+                    if (!nextIsGroupOrRoundRobin) {
+                        updatePlacementUI(false);
+                    }
+                }
+                updateBackButtonState();
+            });
+
+            // Event listener for the back button
+            backButton.addEventListener('click', () => {
+                if (gameHistory.length > 0) {
+                    const prevState = gameHistory.pop();
+                    currentTeamIdentifier = prevState.teamIdentifier;
+                    currentStep = prevState.step;
+                    playedGames = [...prevState.playedGamesSnapshot]; // Restore played games
+
+                    // Determine if the previous state was a group stage or round robin to display all games
+                    const wasGroupOrRoundRobin = (currentStep === 'groupC_placement' && currentTeamIdentifier === 'CT PREMIER') ||
+                                                 (currentStep === 'groupAO_placement' && currentTeamIdentifier === 'ag_O1') ||
+                                                 (currentStep === 'groupAGS_placement' && currentTeamIdentifier === 'ag_S3') ||
+                                                 (currentStep === 'groupAGR_placement' && currentTeamIdentifier === 'ag_R3') || // NEW: for ag_R group
+                                                 (currentStep === 'final_round_robin' && (currentTeamIdentifier === '3rd ag_S' || currentTeamIdentifier === '3rd ag_R' || currentTeamIdentifier.includes('bz_M'))); // Update for new RR
+
+                    displayGames(currentTeamIdentifier, prevState.title, wasGroupOrRoundRobin); // Re-display games
+
+                    // Restore placement UI state
+                    updatePlacementUI(prevState.placementVisible, prevState.questionTitle, prevState.questionText);
+                    placementSelect.value = prevState.selectedPlacement;
+                    placementResult.textContent = prevState.resultText;
+
+                    // Re-enable buttons if we are back to a placement step
+                    if (currentStep === 'groupC_placement' || currentStep === 'groupAO_placement' || currentStep === 'groupAGS_placement' || currentStep === 'groupAGR_placement') {
+                        submitPlacementButton.disabled = false;
+                        placementSelect.disabled = false;
+                    }
+                }
+                updateBackButtonState();
+            });
+        });
+    </script>
+</body>
+</html>
